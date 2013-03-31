@@ -19,6 +19,7 @@ function createObjectFromGCode(gcode) {
  		var speed = Math.round(line.e / 1000);
  		var grouptype = (line.extruding ? 10000 : 0) + speed;
  		var color = new THREE.Color(line.extruding ? 0xffffff : 0x0000ff);
+
  		if (layer.type[grouptype] == undefined) {
  			layer.type[grouptype] = {
  				type: grouptype,
@@ -155,6 +156,12 @@ function createObjectFromGCode(gcode) {
       lastLine = newLine;
     },
 
+    M2: function(args) {
+      // M02: Program done
+    },
+    M30: function(args) {
+      // M30: Program done, rewind to start
+    },
     M82: function(args) {
       // M82: Set E codes absolute (default)
       // Descriped in Sprintrun source code.
@@ -180,8 +187,6 @@ function createObjectFromGCode(gcode) {
   });
 
   parser.parse(gcode);
-
-	console.log("Layer Count ", layers.count());
 
   var object = new THREE.Object3D();
 

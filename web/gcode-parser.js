@@ -36,6 +36,7 @@ GCodeParser.prototype.evalMath = function(input){
 
 GCodeParser.prototype.parseLine = function(text, info) {
   text = text.replace(/;.*$/, '').trim(); // Remove comments
+  text = text.replace(/\(.*\)/, ''); // Remove comments
   if (text) {
     if(text[0] == '#'){
         var parts = text.split('=');
@@ -53,7 +54,10 @@ GCodeParser.prototype.parseLine = function(text, info) {
       var tokens = text.split(' ');
       if (tokens) {
         var cmd = tokens[0];
-
+        // see if we need to clean the command, remove extra 0's
+        if (cmd.length == 3 && cmd[1] == '0'){
+          cmd = cmd[0]+cmd[2];
+        }
         var args = {
           'cmd': cmd
         };
@@ -62,7 +66,7 @@ GCodeParser.prototype.parseLine = function(text, info) {
           var value = parseFloat(token.substring(1));
           args[key] = value;
         });
-        var handler = this.handlers[tokens[0]] || this.handlers['default'];
+        var handler = this.handlers[cmd] || this.handlers['default'];
         if (handler) {
           return handler(args, info);
         }
