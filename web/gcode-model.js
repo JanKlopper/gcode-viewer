@@ -3,13 +3,12 @@ function createObjectFromGCode(gcode) {
   //    http://reprap.org/wiki/G-code
   //    http://en.wikipedia.org/wiki/G-code
   //    SprintRun source code
-	
+
   var lastLine = {x:0, y:0, z:0, e:0, f:0, extruding:false};
- 
  	var layers = [];
  	var layer = undefined;
  	var bbbox = { min: { x:100000,y:100000,z:100000 }, max: { x:-100000,y:-100000,z:-100000 } };
- 	
+
  	function newLayer(line) {
  		layer = { type: {}, layer: layers.count(), z: line.z, };
  		layers.push(layer);
@@ -28,7 +27,7 @@ function createObjectFromGCode(gcode) {
  				color: color,
  				segmentCount: 0,
  				material: new THREE.LineBasicMaterial({
-					  opacity:line.extruding ? 0.5 : 0.4,
+					  opacity:line.extruding ? 0.8 : 0.6,
 					  transparent: true,
 					  linewidth: 1,
 					  vertexColors: THREE.FaceColors }),
@@ -40,7 +39,7 @@ function createObjectFromGCode(gcode) {
  	function addSegment(p1, p2) {
 		var group = getLineGroup(p2);
 		var geometry = group.geometry;
-		
+
 		group.segmentCount++;
         geometry.vertices.push(new THREE.Vertex(
             new THREE.Vector3(p1.x, p1.y, p1.z)));
@@ -57,7 +56,8 @@ function createObjectFromGCode(gcode) {
 			bbbox.max.z = Math.max(bbbox.max.z, p2.z);
 		}
  	}
-  	var relative = false;
+
+  var relative = false;
 	function delta(v1, v2) {
 		return relative ? v2 : v2 - v1;
 	}
@@ -65,7 +65,7 @@ function createObjectFromGCode(gcode) {
 		return relative ? v1 + v2 : v2;
 	}
 
-  var parser = new GCodeParser({  	
+  var parser = new GCodeParser({
     G1: function(args, line) {
       // Example: G1 Z1.0 F3000
       //          G1 X99.9948 Y80.0611 Z15.0 F1500.0 E981.64869
@@ -84,12 +84,31 @@ function createObjectFromGCode(gcode) {
       };
       /* layer change detection is or made by watching Z, it's made by
          watching when we extrude at a new Z position */
-		if (delta(lastLine.e, newLine.e) > 0) {
-			newLine.extruding = delta(lastLine.e, newLine.e) > 0;
-			if (layer == undefined || newLine.z != layer.z)
-				newLayer(newLine);
-		}
-		addSegment(lastLine, newLine);
+		  if (delta(lastLine.e, newLine.e) > 0) {
+			  newLine.extruding = delta(lastLine.e, newLine.e) > 0;
+			  if (layer == undefined || newLine.z != layer.z)
+				  newLayer(newLine);
+		  }
+		  addSegment(lastLine, newLine);
+      lastLine = newLine;
+    },
+
+    G0: function(args, line){
+      var newLine = {
+        x: args.x !== undefined ? absolute(lastLine.x, args.x) : lastLine.x,
+        y: args.y !== undefined ? absolute(lastLine.y, args.y) : lastLine.y,
+        z: args.z !== undefined ? absolute(lastLine.z, args.z) : lastLine.z,
+        e: args.e !== undefined ? absolute(lastLine.e, args.e) : lastLine.e,
+        f: args.f !== undefined ? absolute(lastLine.f, args.f) : lastLine.f,
+      };
+      /* layer change detection is or made by watching Z, it's made by
+         watching when we extrude at a new Z position */
+		  if (delta(lastLine.e, newLine.e) > 0) {
+			  newLine.extruding = delta(lastLine.e, newLine.e) > 0;
+			  if (layer == undefined || newLine.z != layer.z)
+				  newLayer(newLine);
+		  }
+		  addSegment(lastLine, newLine);
       lastLine = newLine;
     },
 
@@ -165,7 +184,7 @@ function createObjectFromGCode(gcode) {
 	console.log("Layer Count ", layers.count());
 
   var object = new THREE.Object3D();
-	
+
 	for (var lid in layers) {
 		var layer = layers[lid];
 //		console.log("Layer ", layer.layer);
@@ -185,7 +204,7 @@ function createObjectFromGCode(gcode) {
   		bbbox.min.y + ((bbbox.max.y - bbbox.min.y) / 2),
   		bbbox.min.z + ((bbbox.max.z - bbbox.min.z) / 2));
 	console.log("center ", center);
-  
+
   object.position = center.multiplyScalar(-scale);
 
   object.scale.multiplyScalar(scale);
