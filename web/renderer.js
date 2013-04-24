@@ -7,7 +7,7 @@ function createScene(element) {
   renderer.clear();
 
   // Scene
-  var scene = new THREE.Scene(); 
+  var scene = new THREE.Scene();
 
   // Lights...
   [[0,0,1,  0xFFFFCC],
@@ -34,7 +34,7 @@ function createScene(element) {
   //camera.lookAt(scene.position);
   scene.add(camera);
   controls = new THREE.TrackballControls(camera);
-  controls.noPan = true;
+  controls.rotateSpeed = 1.0;
   controls.dynamicDampingFactor = 0.15;
 
   // Action!

@@ -4,7 +4,7 @@ function error(msg) {
 
 function loadFile(path, callback /* function(contents) */) {
   $.get(path, null, callback, 'text')
-    .error(function() { error() });
+    .error(function() { error('Cannot load file: '+path) });
 }
 
 function about() {
@@ -88,4 +88,3 @@ $(function() {
     openGCodeFromPath(lastLoaded || 'examples/octocat.gcode');
   }
 });
-
