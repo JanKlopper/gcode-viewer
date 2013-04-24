@@ -2,9 +2,10 @@ function createObjectFromGCode(gcode) {
   // GCode descriptions come from:
   //    http://reprap.org/wiki/G-code
   //    http://en.wikipedia.org/wiki/G-code
+  //    http://linuxcnc.org/docs/html/gcode.html
   //    SprintRun source code
 
-  var lastLine = {x:0, y:0, z:0, e:0, f:0, extruding:false};
+  var lastLine = {x:0, y:0, z:0, e:0, f:0, extruding:false, milling:false};
  	var layers = [];
  	var layer = undefined;
  	var bbbox = { min: { x:100000,y:100000,z:100000 }, max: { x:-100000,y:-100000,z:-100000 } };
@@ -17,18 +18,19 @@ function createObjectFromGCode(gcode) {
  		if (layer == undefined)
  			newLayer(line);
  		var speed = Math.round(line.e / 1000);
- 		var grouptype = (line.extruding ? 10000 : 0) + speed;
- 		var color = new THREE.Color(line.extruding ? 0xffffff : 0x0000ff);
+ 		var grouptype = (line.extruding || line.milling ? 10000 : 0) + speed;
+ 		var color = new THREE.Color(line.extruding || line.milling ? 0xffffff : 0x0000ff);
 
  		if (layer.type[grouptype] == undefined) {
  			layer.type[grouptype] = {
  				type: grouptype,
  				feed: line.e,
  				extruding: line.extruding,
+ 				milling: line.milling,
  				color: color,
  				segmentCount: 0,
  				material: new THREE.LineBasicMaterial({
-					  opacity:line.extruding ? 0.8 : 0.6,
+					  opacity:line.extruding || line.milling ? 0.8 : 0.6,
 					  transparent: true,
 					  linewidth: 1,
 					  vertexColors: THREE.FaceColors }),
@@ -48,7 +50,7 @@ function createObjectFromGCode(gcode) {
             new THREE.Vector3(p2.x, p2.y, p2.z)));
         geometry.colors.push(group.color);
         geometry.colors.push(group.color);
-        if (p2.extruding) {
+        if (p2.extruding || p2.milling) {
 			bbbox.min.x = Math.min(bbbox.min.x, p2.x);
 			bbbox.min.y = Math.min(bbbox.min.y, p2.y);
 			bbbox.min.z = Math.min(bbbox.min.z, p2.z);
@@ -82,11 +84,13 @@ function createObjectFromGCode(gcode) {
         z: args.z !== undefined ? absolute(lastLine.z, args.z) : lastLine.z,
         e: args.e !== undefined ? absolute(lastLine.e, args.e) : lastLine.e,
         f: args.f !== undefined ? absolute(lastLine.f, args.f) : lastLine.f,
+        milling: true
       };
       /* layer change detection is or made by watching Z, it's made by
          watching when we extrude at a new Z position */
 		  if (delta(lastLine.e, newLine.e) > 0) {
 			  newLine.extruding = delta(lastLine.e, newLine.e) > 0;
+
 			  if (layer == undefined || newLine.z != layer.z)
 				  newLayer(newLine);
 		  }
@@ -101,11 +105,12 @@ function createObjectFromGCode(gcode) {
         z: args.z !== undefined ? absolute(lastLine.z, args.z) : lastLine.z,
         e: args.e !== undefined ? absolute(lastLine.e, args.e) : lastLine.e,
         f: args.f !== undefined ? absolute(lastLine.f, args.f) : lastLine.f,
+        milling: false
       };
       /* layer change detection is or made by watching Z, it's made by
          watching when we extrude at a new Z position */
 		  if (delta(lastLine.e, newLine.e) > 0) {
-			  newLine.extruding = delta(lastLine.e, newLine.e) > 0;
+
 			  if (layer == undefined || newLine.z != layer.z)
 				  newLayer(newLine);
 		  }
